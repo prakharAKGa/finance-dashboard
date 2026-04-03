@@ -15,6 +15,7 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '5000', 10),
   appName: process.env.APP_NAME || 'FinanceDashboardAPI',
+  publicUrl: process.env.RENDER_EXTERNAL_URL || process.env.APP_URL || '',
   db: {
     url: process.env.DATABASE_URL!,
   },
