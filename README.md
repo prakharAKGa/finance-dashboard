@@ -330,6 +330,4 @@ Basic health checks after deploy:
 - Role permissions are intentionally simple and middleware-driven for clarity.
 - Seed data is demo-focused and idempotent for repeatable setup.
 
-## License
 
-ISC
