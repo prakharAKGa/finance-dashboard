@@ -12,3 +12,4 @@ yarn-error.log*
 coverage/
 
 /src/generated/prisma
+prisma/seed.js

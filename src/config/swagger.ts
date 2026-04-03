@@ -119,6 +119,14 @@ const options: swaggerJSDoc.Options = {
             },
           },
         },
+        UpdateUserRequest: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', example: 'Updated Name' },
+            role: { type: 'string', enum: ['VIEWER', 'ANALYST', 'ADMIN'] },
+            isActive: { type: 'boolean', example: true },
+          },
+        },
         ApiSuccess: {
           type: 'object',
           properties: {
@@ -126,6 +134,59 @@ const options: swaggerJSDoc.Options = {
             message: { type: 'string' },
             data: {},
             pagination: { type: 'object' },
+          },
+        },
+        ApiError: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: false },
+            message: { type: 'string', example: 'Validation failed' },
+            errors: {
+              type: 'array',
+              items: { type: 'string' },
+            },
+          },
+        },
+      },
+      responses: {
+        BadRequest: {
+          description: 'Bad Request',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ApiError' },
+            },
+          },
+        },
+        Unauthorized: {
+          description: 'Unauthorized',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ApiError' },
+            },
+          },
+        },
+        Forbidden: {
+          description: 'Forbidden',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ApiError' },
+            },
+          },
+        },
+        NotFound: {
+          description: 'Not Found',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ApiError' },
+            },
+          },
+        },
+        InternalServerError: {
+          description: 'Internal Server Error',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ApiError' },
+            },
           },
         },
       },
@@ -148,7 +209,11 @@ const options: swaggerJSDoc.Options = {
               },
             },
           },
-          responses: { '201': { description: 'User registered' } },
+          responses: {
+            '201': { description: 'User registered' },
+            '400': { $ref: '#/components/responses/BadRequest' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
       },
       '/api/v1/auth/login': {
@@ -163,7 +228,12 @@ const options: swaggerJSDoc.Options = {
               },
             },
           },
-          responses: { '200': { description: 'Login successful' } },
+          responses: {
+            '200': { description: 'Login successful' },
+            '400': { $ref: '#/components/responses/BadRequest' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
       },
       '/api/v1/auth/refresh': {
@@ -178,21 +248,34 @@ const options: swaggerJSDoc.Options = {
               },
             },
           },
-          responses: { '200': { description: 'Tokens refreshed' } },
+          responses: {
+            '200': { description: 'Tokens refreshed' },
+            '400': { $ref: '#/components/responses/BadRequest' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
       },
       '/api/v1/auth/logout': {
         post: {
           tags: ['Auth'],
           summary: 'Logout',
-          responses: { '200': { description: 'Logged out' } },
+          responses: {
+            '200': { description: 'Logged out' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
       },
       '/api/v1/auth/me': {
         get: {
           tags: ['Auth'],
           summary: 'Current user',
-          responses: { '200': { description: 'Current user details' } },
+          responses: {
+            '200': { description: 'Current user details' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
       },
       '/api/v1/transactions': {
@@ -210,7 +293,11 @@ const options: swaggerJSDoc.Options = {
             { in: 'query', name: 'sortBy', schema: { type: 'string', enum: ['date', 'amount', 'createdAt'], default: 'date' } },
             { in: 'query', name: 'order', schema: { type: 'string', enum: ['asc', 'desc'], default: 'desc' } },
           ],
-          responses: { '200': { description: 'Transactions fetched' } },
+          responses: {
+            '200': { description: 'Transactions fetched' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
         post: {
           tags: ['Transactions'],
@@ -223,7 +310,13 @@ const options: swaggerJSDoc.Options = {
               },
             },
           },
-          responses: { '201': { description: 'Transaction created' } },
+          responses: {
+            '201': { description: 'Transaction created' },
+            '400': { $ref: '#/components/responses/BadRequest' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '403': { $ref: '#/components/responses/Forbidden' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
       },
       '/api/v1/transactions/export': {
@@ -239,6 +332,9 @@ const options: swaggerJSDoc.Options = {
                 },
               },
             },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '403': { $ref: '#/components/responses/Forbidden' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
           },
         },
       },
@@ -254,7 +350,13 @@ const options: swaggerJSDoc.Options = {
               },
             },
           },
-          responses: { '201': { description: 'Transactions imported' } },
+          responses: {
+            '201': { description: 'Transactions imported' },
+            '400': { $ref: '#/components/responses/BadRequest' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '403': { $ref: '#/components/responses/Forbidden' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
       },
       '/api/v1/transactions/{id}': {
@@ -262,7 +364,13 @@ const options: swaggerJSDoc.Options = {
           tags: ['Transactions'],
           summary: 'Get Txn',
           parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' } }],
-          responses: { '200': { description: 'Transaction found' }, '404': { description: 'Transaction not found' } },
+          responses: {
+            '200': { description: 'Transaction found' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '403': { $ref: '#/components/responses/Forbidden' },
+            '404': { $ref: '#/components/responses/NotFound' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
         put: {
           tags: ['Transactions'],
@@ -276,7 +384,14 @@ const options: swaggerJSDoc.Options = {
               },
             },
           },
-          responses: { '200': { description: 'Transaction updated' } },
+          responses: {
+            '200': { description: 'Transaction updated' },
+            '400': { $ref: '#/components/responses/BadRequest' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '403': { $ref: '#/components/responses/Forbidden' },
+            '404': { $ref: '#/components/responses/NotFound' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
         patch: {
           tags: ['Transactions'],
@@ -290,27 +405,62 @@ const options: swaggerJSDoc.Options = {
               },
             },
           },
-          responses: { '200': { description: 'Transaction updated' } },
+          responses: {
+            '200': { description: 'Transaction updated' },
+            '400': { $ref: '#/components/responses/BadRequest' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '403': { $ref: '#/components/responses/Forbidden' },
+            '404': { $ref: '#/components/responses/NotFound' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
         delete: {
           tags: ['Transactions'],
           summary: 'Delete Txn',
           parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' } }],
-          responses: { '200': { description: 'Transaction deleted' } },
+          responses: {
+            '200': { description: 'Transaction deleted' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '403': { $ref: '#/components/responses/Forbidden' },
+            '404': { $ref: '#/components/responses/NotFound' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
       },
       '/api/v1/summary/overview': {
-        get: { tags: ['Summary'], summary: 'Overview', responses: { '200': { description: 'Overview summary' } } },
+        get: {
+          tags: ['Summary'],
+          summary: 'Overview',
+          responses: {
+            '200': { description: 'Overview summary' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
+        },
       },
       '/api/v1/summary/category': {
-        get: { tags: ['Summary'], summary: 'Category', responses: { '200': { description: 'Category breakdown' } } },
+        get: {
+          tags: ['Summary'],
+          summary: 'Category',
+          responses: {
+            '200': { description: 'Category breakdown' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '403': { $ref: '#/components/responses/Forbidden' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
+        },
       },
       '/api/v1/summary/monthly': {
         get: {
           tags: ['Summary'],
           summary: 'Monthly',
           parameters: [{ in: 'query', name: 'months', schema: { type: 'integer', default: 6 } }],
-          responses: { '200': { description: 'Monthly trend' } },
+          responses: {
+            '200': { description: 'Monthly trend' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '403': { $ref: '#/components/responses/Forbidden' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
       },
       '/api/v1/summary/recent': {
@@ -318,14 +468,23 @@ const options: swaggerJSDoc.Options = {
           tags: ['Summary'],
           summary: 'Recent',
           parameters: [{ in: 'query', name: 'limit', schema: { type: 'integer', default: 5 } }],
-          responses: { '200': { description: 'Recent transactions' } },
+          responses: {
+            '200': { description: 'Recent transactions' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
       },
       '/api/v1/users': {
         get: {
           tags: ['Users'],
           summary: 'List users (admin)',
-          responses: { '200': { description: 'User list' } },
+          responses: {
+            '200': { description: 'User list' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '403': { $ref: '#/components/responses/Forbidden' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
       },
       '/api/v1/users/{id}': {
@@ -333,13 +492,34 @@ const options: swaggerJSDoc.Options = {
           tags: ['Users'],
           summary: 'Update user (admin)',
           parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' } }],
-          responses: { '200': { description: 'User updated' } },
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/UpdateUserRequest' },
+              },
+            },
+          },
+          responses: {
+            '200': { description: 'User updated' },
+            '400': { $ref: '#/components/responses/BadRequest' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '403': { $ref: '#/components/responses/Forbidden' },
+            '404': { $ref: '#/components/responses/NotFound' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
         delete: {
           tags: ['Users'],
           summary: 'Delete user (admin)',
           parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' } }],
-          responses: { '200': { description: 'User deleted' } },
+          responses: {
+            '200': { description: 'User deleted' },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+            '403': { $ref: '#/components/responses/Forbidden' },
+            '404': { $ref: '#/components/responses/NotFound' },
+            '500': { $ref: '#/components/responses/InternalServerError' },
+          },
         },
       },
     },
