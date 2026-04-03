@@ -13,7 +13,10 @@ export class ApiError extends Error {
     this.statusCode = statusCode;
     this.errors = errors;
     this.isOperational = isOperational;
-    Error.captureStackTrace(this, this.constructor);
+    const errorWithCapture = Error as ErrorConstructor & {
+      captureStackTrace?: (targetObject: object, constructorOpt?: Function) => void;
+    };
+    errorWithCapture.captureStackTrace?.(this, this.constructor);
   }
 
   static badRequest(msg: string, errors?: string[]) {

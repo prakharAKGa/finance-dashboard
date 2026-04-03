@@ -1,8 +1,8 @@
+import { Role } from '@prisma/client';
 import { Router } from 'express';
 import * as ctrl from '../controllers/user.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { authorize } from '../middleware/rbac.middleware';
-import { Role } from '../services/mockDb';
 
 const router = Router();
 

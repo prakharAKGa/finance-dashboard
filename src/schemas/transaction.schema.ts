@@ -34,3 +34,18 @@ export const listTransactionSchema = z.object({
     order:    z.enum(['asc', 'desc']).optional().default('desc'),
   }),
 });
+
+export const importTransactionSchema = z.object({
+  body: z.object({
+    transactions: z.array(
+      z.object({
+        amount: z.number().positive(),
+        type: z.enum(['INCOME', 'EXPENSE']),
+        category: z.string().min(1).max(100),
+        description: z.string().max(500).optional(),
+        date: z.string().datetime(),
+        userId: z.string().uuid().optional(),
+      })
+    ).min(1).max(1000),
+  }),
+});

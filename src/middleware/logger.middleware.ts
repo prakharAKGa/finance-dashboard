@@ -1,5 +1,5 @@
-import winston from 'winston';
 import morgan from 'morgan';
+import winston from 'winston';
 import { config } from '../config';
 
 export const logger = winston.createLogger({
@@ -30,5 +30,5 @@ export const logger = winston.createLogger({
 // Morgan HTTP request logger
 export const loggerMiddleware = morgan(
   config.nodeEnv === 'production' ? 'combined' : 'dev',
-  { stream: { write: (msg) => logger.http(msg.trim()) } }
+  { stream: { write: (msg: string) => logger.http(msg.trim()) } }
 );

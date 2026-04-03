@@ -8,8 +8,9 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get('/summary',    ctrl.getSummary);
-router.get('/categories', authorize(Role.ANALYST, Role.ADMIN), ctrl.getCategories);
-router.get('/trends',     authorize(Role.ANALYST, Role.ADMIN), ctrl.getTrends);
+router.get('/overview', ctrl.getOverview);
+router.get('/category', authorize(Role.ANALYST, Role.ADMIN), ctrl.getCategory);
+router.get('/monthly', authorize(Role.ANALYST, Role.ADMIN), ctrl.getMonthly);
+router.get('/recent', ctrl.getRecent);
 
 export default router;

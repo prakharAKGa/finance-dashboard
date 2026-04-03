@@ -1,8 +1,34 @@
-import { mockDb, TransactionType } from './mockDb';
+import { Prisma, TransactionType } from '@prisma/client';
+import { prisma } from './prisma';
 
 export class DashboardService {
+  private buildWhere(userId?: string): Prisma.TransactionWhereInput {
+    return {
+      deletedAt: null,
+      ...(userId ? { userId } : {}),
+    };
+  }
+
   async getSummary(userId?: string) {
-    const { totalIncome, totalExpense, recentTransactions } = await mockDb.getAggregates({ userId });
+    const where = this.buildWhere(userId);
+    const [income, expense, recentTransactions] = await Promise.all([
+      prisma.transaction.aggregate({
+        where: { ...where, type: TransactionType.INCOME },
+        _sum: { amount: true },
+      }),
+      prisma.transaction.aggregate({
+        where: { ...where, type: TransactionType.EXPENSE },
+        _sum: { amount: true },
+      }),
+      prisma.transaction.findMany({
+        where,
+        orderBy: { date: 'desc' },
+        take: 5,
+      }),
+    ]);
+
+    const totalIncome = income._sum.amount ?? 0;
+    const totalExpense = expense._sum.amount ?? 0;
 
     return {
       totalIncome,
@@ -13,24 +39,19 @@ export class DashboardService {
   }
 
   async getCategoryBreakdown(userId?: string) {
-    const { data } = await mockDb.queryTransactions({ userId, limit: 1000 });
-    
-    const breakdown: Record<string, { total: number, count: number, type: string }> = {};
-
-    data.forEach(t => {
-      const key = `${t.category}-${t.type}`;
-      if (!breakdown[key]) {
-        breakdown[key] = { total: 0, count: 0, type: t.type };
-      }
-      breakdown[key].total += t.amount;
-      breakdown[key].count += 1;
+    const rows = await prisma.transaction.groupBy({
+      by: ['category', 'type'],
+      where: this.buildWhere(userId),
+      _sum: { amount: true },
+      _count: { _all: true },
+      orderBy: { category: 'asc' },
     });
 
-    return Object.entries(breakdown).map(([key, val]) => ({
-      category: key.split('-')[0],
-      type: val.type,
-      total: val.total,
-      count: val.count
+    return rows.map((row) => ({
+      category: row.category,
+      type: row.type,
+      total: row._sum.amount ?? 0,
+      count: row._count._all,
     }));
   }
 
@@ -38,7 +59,18 @@ export class DashboardService {
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - months);
 
-    const { data } = await mockDb.queryTransactions({ userId, startDate, limit: 1000 });
+    const data = await prisma.transaction.findMany({
+      where: {
+        ...this.buildWhere(userId),
+        date: { gte: startDate },
+      },
+      orderBy: { date: 'asc' },
+      select: {
+        amount: true,
+        type: true,
+        date: true,
+      },
+    });
 
     const monthly: Record<string, { income: number; expense: number }> = {};
     data.forEach((tx) => {
@@ -54,6 +86,14 @@ export class DashboardService {
       ...values,
       net: values.income - values.expense,
     }));
+  }
+
+  async getRecentTransactions(userId?: string, take = 5) {
+    return prisma.transaction.findMany({
+      where: this.buildWhere(userId),
+      orderBy: { date: 'desc' },
+      take,
+    });
   }
 }
 

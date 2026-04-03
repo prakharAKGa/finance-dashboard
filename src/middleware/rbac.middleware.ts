@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { Role } from '../services/mockDb';
+import { Role } from '@prisma/client';
+import { NextFunction, Request, Response } from 'express';
 import { ApiError } from '../utils/ApiError';
 
 export const authorize = (...roles: Role[]) => {

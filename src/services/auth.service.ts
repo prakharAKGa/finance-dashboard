@@ -1,8 +1,9 @@
+import { Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { mockDb, Role } from './mockDb';
 import { config } from '../config';
 import { ApiError } from '../utils/ApiError';
+import { prisma } from './prisma';
 
 export class AuthService {
   async register(data: {
@@ -11,16 +12,28 @@ export class AuthService {
     password: string;
     role?: Role;
   }) {
-    const existing = await mockDb.findUserByEmail(data.email);
+    const existing = await prisma.user.findUnique({
+      where: { email: data.email },
+    });
     if (existing) throw ApiError.badRequest('Email already in use');
 
     const hashed = await bcrypt.hash(data.password, 12);
-    const user = await mockDb.createUser({ ...data, password: hashed });
+    const user = await prisma.user.create({
+      data: {
+        name: data.name,
+        email: data.email,
+        password: hashed,
+        role: data.role ?? Role.VIEWER,
+      },
+    });
 
     const tokens = this.generateTokens(user.id, user.email, user.role);
 
-    await mockDb.updateUser(user.id, { 
-      refreshToken: await bcrypt.hash(tokens.refreshToken, 10) 
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        refreshToken: await bcrypt.hash(tokens.refreshToken, 10),
+      },
     });
 
     const { password: _, refreshToken: __, ...userData } = user;
@@ -28,7 +41,7 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
-    const user = await mockDb.findUserByEmail(email);
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw ApiError.unauthorized('Invalid email or password');
@@ -40,8 +53,11 @@ export class AuthService {
 
     const tokens = this.generateTokens(user.id, user.email, user.role);
 
-    await mockDb.updateUser(user.id, { 
-      refreshToken: await bcrypt.hash(tokens.refreshToken, 10) 
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        refreshToken: await bcrypt.hash(tokens.refreshToken, 10),
+      },
     });
 
     const { password: _, refreshToken: __, ...userData } = user;
@@ -50,8 +66,10 @@ export class AuthService {
 
   async refreshTokens(token: string) {
     try {
-      const decoded = jwt.verify(token, config.jwt.refreshSecret) as any;
-      const user = await mockDb.findUserById(decoded.userId);
+      const decoded = jwt.verify(token, config.jwt.refreshSecret) as {
+        userId: string;
+      };
+      const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
 
       if (!user?.refreshToken) throw new Error();
 
@@ -59,8 +77,11 @@ export class AuthService {
       if (!valid) throw new Error();
 
       const tokens = this.generateTokens(user.id, user.email, user.role);
-      await mockDb.updateUser(user.id, { 
-        refreshToken: await bcrypt.hash(tokens.refreshToken, 10) 
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          refreshToken: await bcrypt.hash(tokens.refreshToken, 10),
+        },
       });
 
       return tokens;
@@ -70,7 +91,10 @@ export class AuthService {
   }
 
   async logout(userId: string) {
-    await mockDb.updateUser(userId, { refreshToken: null });
+    await prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: null },
+    });
   }
 
   private generateTokens(userId: string, email: string, role: Role) {

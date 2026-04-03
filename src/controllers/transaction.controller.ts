@@ -1,8 +1,8 @@
-import { Request, Response } from 'express';
+import { Role } from '@prisma/client';
+import { Request } from 'express';
 import { transactionService } from '../services/transaction.service';
 import { ApiResponse } from '../utils/ApiResponse';
 import { catchAsync } from '../utils/catchAsync';
-import { Role } from '../services/mockDb';
 
 const isAdmin = (req: Request) => req.user!.role === Role.ADMIN;
 
@@ -16,19 +16,51 @@ export const create = catchAsync(async (req, res) => {
 
 export const list = catchAsync(async (req, res) => {
   const q = req.query as any;
+  const page = Number.parseInt(q.page ?? '1', 10);
+  const limit = Number.parseInt(q.limit ?? '10', 10);
+
   const result = await transactionService.findAll({
-    page: parseInt(q.page, 10),
-    limit: Math.min(parseInt(q.limit, 10), 100),
+    page: Number.isFinite(page) && page > 0 ? page : 1,
+    limit: Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 10,
     type: q.type,
     category: q.category,
     search: q.search,
     startDate: q.startDate,
     endDate: q.endDate,
-    sortBy: q.sortBy,
-    order: q.order,
+    sortBy: q.sortBy || 'date',
+    order: q.order || 'desc',
     userId: isAdmin(req) ? undefined : req.user!.userId,
   });
   res.json(ApiResponse.success(result.data, 'Transactions fetched', result.pagination));
+});
+
+export const exportData = catchAsync(async (req, res) => {
+  const q = req.query as any;
+  const csv = await transactionService.exportCsv({
+    page: 1,
+    limit: 100000,
+    type: q.type,
+    category: q.category,
+    search: q.search,
+    startDate: q.startDate,
+    endDate: q.endDate,
+    sortBy: q.sortBy || 'date',
+    order: q.order || 'desc',
+    userId: isAdmin(req) ? undefined : req.user!.userId,
+  });
+
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="transactions.csv"');
+  res.status(200).send(csv);
+});
+
+export const importData = catchAsync(async (req, res) => {
+  const result = await transactionService.importBulk(
+    req.body.transactions,
+    req.user!.userId,
+    isAdmin(req)
+  );
+  res.status(201).json(ApiResponse.success(result, 'Transactions imported'));
 });
 
 export const getOne = catchAsync(async (req, res) => {

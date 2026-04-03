@@ -10,3 +10,5 @@ yarn-error.log*
 .tmp/
 .temp/
 coverage/
+
+/src/generated/prisma
